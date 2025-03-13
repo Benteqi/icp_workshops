@@ -12,27 +12,29 @@ fn greet(name: String) -> String {
         translation_text : String
     }
 #[ic_cdk::update]
-async fn translate() -> String {
+async fn translate(text:String) -> Result<String, String> {
     let token = "";
     let arg = CanisterHttpRequestArgument {
         url: "https://api-inference.huggingface.co/models/google-t5/t5-base".to_string(),
         max_response_bytes: None,
-        method: HttpMethod::GET,
+        method: HttpMethod::POST,
         headers: vec![
             HttpHeader{
                 name: "Authorization".to_string(),
                 value: format!("Bearer {}", token).to_string(),
             }
         ],
-        body: Some(r#"{"inputs" : "What's up?"}"#.into()),
+        body: Some(format!(r#"{{"inputs" : {}"}}"#,text).into()),
         transform: None,
     };
     let res = http_request(
         arg,
-        100_000_000_000
-    ).await.unwrap();
+        (1_603_112_800 + text.len() * 400 ).try_into().unwrap()
+    ).await.map_err(|error| format!("Error while querying data(status{:?}) Error{}", error.0,error.1))?;
+
     println!("{:?}", res);
-    println!("{:?}", String::from_utf8(res.0.body.clone()));
-    let formatted_res: (Response,) = serde_json::from_slice(&res.0.body).unwrap();
-    String::new()
+
+    let formatted_res: (Response,) = serde_json::from_slice(&res.0.body).map_err(|error| format!("Error while querying data. Error{}", error))?;
+    println!("{:?}", formatted_res.0.translation_text);
+    Ok(formatted_res.0.translation_text)
 }
