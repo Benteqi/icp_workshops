@@ -24,13 +24,13 @@ async fn translate(text:String) -> Result<String, String> {
                 value: format!("Bearer {}", token).to_string(),
             }
         ],
-        body: Some(format!(r#"{{"inputs" : {}"}}"#,text).into()),
+        body: Some(format!(r#"{{"inputs" : "{}"}}"#,text).into()),
         transform: None,
     };
     let res = http_request(
         arg,
-        (1_603_112_800 + text.len() * 400 ).try_into().unwrap()
-    ).await.map_err(|error| format!("Error while querying data(status{:?}) Error{}", error.0,error.1))?;
+        (1_603_112_800 + (text.len() +1) * 400 ).try_into().unwrap()
+    ).await.map_err(|error| format!("Error while querying data(status{:?}) Error: {}", error.0,error.1))?;
 
     println!("{:?}", res);
 
